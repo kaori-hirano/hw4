@@ -1,0 +1,36 @@
+---
+title: "HW 4: Clustering and Regression"
+author: "Insert your name here"
+date: "Insert date here"
+format: pdf
+---
+
+# Packages
+
+```{r load-packages}
+# load packages here
+```
+
+# Data
+
+```{r import-data}
+# remember that data is found in openintro package
+```
+
+# Exercises
+
+## Data Prep
+
+### Q1
+
+```{r q1}
+# code here
+```
+
+*Add question headers as needed*.
+
+## Clustering and Modeling
+
+## Lasso
+
+## Comparing Approaches
