@@ -31,13 +31,48 @@ data('evals')
 ### Q1
 
 ```{r q1}
+# creates new dataframe for edited data
+d <- evals 
+
+# assigns num times a prof teaches a class to total courses a prof teaches
+d$prof_num_cls <- evals %>% group_by(prof_id) %>% mutate(count = n())
+
+```
+### Q2
+```{r q2}
+# removes course id, prof id, and cls did eval
+d <- evals %>% select(-one_of('course_id', 'prof_id', 'cls_did_eval'))
+
+# removes bty flower through btymupper
+d <- evals %>% select(-(bty_f1lower:bty_m2upper))
+
+# splits data in training and test set by 70/30
+set.seed(280)
+train <- sample(c(TRUE, FALSE), nrow(d),
+     replace = TRUE, prob=c(.7,.3))
+test <- (!train)
+```
+
+## Clustering and Modeling
+```{r q1}
+# code here
+```
+```{r q1}
+# code here
+```
+```{r q1}
 # code here
 ```
 
-*Add question headers as needed*.
-
-## Clustering and Modeling
-
 ## Lasso
+```{r q1}
+# code here
+```
+```{r q1}
+# code here
+```
+```{r q1}
+# code here
+```
 
 ## Comparing Approaches
