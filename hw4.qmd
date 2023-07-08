@@ -44,7 +44,8 @@ d$prof_num_cls <- evals %>% group_by(prof_id) %>% mutate(count = n())
 d <- evals %>% select(-one_of('course_id', 'prof_id', 'cls_did_eval'))
 
 # removes bty flower through btymupper
-d <- evals %>% select(-(bty_f1lower:bty_m2upper))
+d <- d %>% select(-(bty_f1lower:bty_m2upper))
+# names(d)
 
 # splits data in training and test set by 70/30
 set.seed(280)
@@ -54,9 +55,84 @@ test <- (!train)
 ```
 
 ## Clustering and Modeling
-```{r q1}
-# code here
+```{r q3}
+# adding clusters to dataset
+names(d)
+set.seed(281)
 ```
+
+```{r add-cluster}
+add_cluster <- function(col_name, data, cluster_num) {
+
+evals_kmeans <- kmeans(data %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = cluster_num, nstart = 50)
+# cluster assignment
+data <- data %>%
+mutate(col_name = evals_kmeans$cluster)
+
+}
+
+```
+
+```{r manually-adding-clusters}
+
+# adds 2
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 2, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c2 = evals_kmeans$cluster)
+
+# adds 3
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 3, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c3 = evals_kmeans$cluster)
+
+
+# adds 4
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 4, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c4 = evals_kmeans$cluster)
+
+# adds 5
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 5, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c5 = evals_kmeans$cluster)
+
+# adds 6
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 6, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c6 = evals_kmeans$cluster)
+
+# adds 7
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 7, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c7 = evals_kmeans$cluster)
+
+
+# adds 8
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 8, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c8 = evals_kmeans$cluster)
+
+
+# adds 9
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 9, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c9 = evals_kmeans$cluster)
+
+# adds 10
+evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 10, nstart = 50)
+# cluster assignment
+d <- d %>%
+mutate(c10 = evals_kmeans$cluster)
+```
+
 ```{r q1}
 # code here
 ```
@@ -65,7 +141,7 @@ test <- (!train)
 ```
 
 ## Lasso
-```{r q1}
+```{r q5}
 # code here
 ```
 ```{r q1}
