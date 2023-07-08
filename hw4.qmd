@@ -8,13 +8,20 @@ format: pdf
 # Packages
 
 ```{r load-packages}
-# load packages here
+suppressPackageStartupMessages(library(tidyverse))
+library(ISLR2)
+library(broom) # for tidy function
+library(patchwork) # for plot placement
+library(ggdendro) # for dendrograms
+library(mdsr) # for later examples
+library(ggplot2)
+suppressPackageStartupMessages(library(openintro))
 ```
 
 # Data
 
 ```{r import-data}
-# remember that data is found in openintro package
+data('evals')
 ```
 
 # Exercises
