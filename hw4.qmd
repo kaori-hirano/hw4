@@ -139,6 +139,7 @@ mutate(c10 = factor(evals_kmeans10$cluster))
 # basic model is all categorical and cluster
 glm2 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c2, data = d2) 
 # cross validation
+set.seed(281)
 cv_err2 <- cv.glm(data = d2, glmfit = glm2, K = 10)
 # gives MSE
 cv_err2$delta
@@ -147,6 +148,7 @@ cv_err2$delta
 # basic model is all categorical and cluster
 glm3 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c3, data = d3) 
 # cross validation
+set.seed(281)
 cv_err3 <- cv.glm(data = d3, glmfit = glm3, K = 10)
 # gives MSE
 cv_err3$delta
@@ -155,6 +157,7 @@ cv_err3$delta
 # basic model is all categorical and cluster
 glm4 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c4, data = d4) 
 # cross validation
+set.seed(281)
 cv_err4 <- cv.glm(data = d4, glmfit = glm4, K = 10)
 # gives MSE
 cv_err4$delta
@@ -163,6 +166,7 @@ cv_err4$delta
 # basic model is all categorical and cluster
 glm5 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c5, data = d5) 
 # cross validation
+set.seed(281)
 cv_err5 <- cv.glm(data = d5, glmfit = glm5, K = 10)
 # gives MSE
 cv_err5$delta
@@ -171,6 +175,7 @@ cv_err5$delta
 # basic model is all categorical and cluster
 glm6 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c6, data = d6) 
 # cross validation
+set.seed(281)
 cv_err6 <- cv.glm(data = d6, glmfit = glm6, K = 10)
 # gives MSE
 cv_err6$delta
@@ -179,6 +184,7 @@ cv_err6$delta
 # basic model is all categorical and cluster
 glm7 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c7, data = d7) 
 # cross validation
+set.seed(281)
 cv_err7 <- cv.glm(data = d7, glmfit = glm7, K = 10)
 # gives MSE
 cv_err7$delta
@@ -187,6 +193,7 @@ cv_err7$delta
 # basic model is all categorical and cluster
 glm8 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c8, data = d8) 
 # cross validation
+set.seed(281)
 cv_err8 <- cv.glm(data = d8, glmfit = glm8, K = 10)
 # gives MSE
 cv_err8$delta
@@ -195,6 +202,7 @@ cv_err8$delta
 # basic model is all categorical and cluster
 glm9 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c9, data = d9) 
 # cross validation
+set.seed(281)
 cv_err9 <- cv.glm(data = d9, glmfit = glm9, K = 10)
 # gives MSE
 cv_err9$delta
@@ -203,11 +211,12 @@ cv_err9$delta
 # basic model is all categorical and cluster
 glm10 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c10, data = d10) 
 # cross validation
+set.seed(281)
 cv_err10 <- cv.glm(data = d10, glmfit = glm10, K = 10)
 # gives MSE
 cv_err10$delta
 ```
-6 clusters has the lowest MSE (.2732, .2720), so it is the optimal number of clusters for this model. 
+4 clusters has the lowest MSE (.2714, .2705), so it is the optimal number of clusters for this model. 
 
 ```{r out-of-sample-error}
 # HOW DO YOU USE THE TEST SET TO ESTIMATE BASED ON THE REFITTED MODEL ON THE WHOLE TRAINING DATA? 
@@ -216,7 +225,7 @@ cv_err10$delta
 set.seed(282)
 # train is already established 
 # fits k means on training
-kmeans_out <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 6, nstart = 50)
+kmeans_out <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 4, nstart = 50)
 # getting predictions on kmeans numerical only
 
 pred_clust  <- get.knnx(kmeans_out$center, d[-train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color'), -1)$nn.index[,1]
@@ -248,22 +257,25 @@ glmbest <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_pr
 ## Lasso
 ```{r cv-lasso}
 # set up lasso
-set.seed(283)
 # sets up matrix
 x <- model.matrix(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color, 
                   d)[, -1]
 y <- d$score
-grid <- 10^seq(10, -2, length = 100)
+y_val <- y[test] #gets y of test set
+
+grid <- 10^seq(10, -2, length = 100) # sets lam
+
+set.seed(283)
 lasso_mod <- glmnet(x[train, ], y[train], alpha = 1,
     lambda = grid)
 
 # get l
+set.seed(283)
 cv_out_lasso <- cv.glmnet(x[train, ], y[train], alpha = 1)
 bestlaml <- cv_out_lasso$lambda.min
 bestlaml
 
 # gets MSE
-y_val <- y[test]
 lasso_pred <- predict(lasso_mod, s = bestlaml,
     newx = x[test, ])
 mean((lasso_pred - y_val)^2)
@@ -274,7 +286,7 @@ lasso_coef <- predict(out, type = 'coefficient', s = bestlaml)
 lasso_coef
 ```
 
-The ideal lambda is 0.0198 The MSE for the test set is .2581. The variables selected by lasso are tenured, ethnicity (not minority), gender (male), language (non english), class credit (one credit), outfit (not formal) and pic color (color). 
+The ideal lambda is 0.026 The MSE for the test set is .259. The variables selected by lasso are tenured, ethnicity (not minority), gender (male), language (non english), class credit (one credit), outfit (not formal) and pic color (color). 
 
 
 ### Q6
