@@ -31,17 +31,16 @@ data('evals')
 ### Q1
 
 ```{r q1}
-# creates new dataframe for edited data
-d <- evals 
+# assigns num times a prof teaches a class to total courses a prof teaches into new dataframe
+d <- evals %>% group_by(prof_id) %>% mutate(count = n())
 
-# assigns num times a prof teaches a class to total courses a prof teaches
-d$prof_num_cls <- evals %>% group_by(prof_id) %>% mutate(count = n())
+d$prof_num_cls <- d$count
 
 ```
 ### Q2
 ```{r q2}
 # removes course id, prof id, and cls did eval
-d <- evals %>% select(-one_of('course_id', 'prof_id', 'cls_did_eval'))
+d <- d %>% select(-one_of('course_id', 'prof_id', 'cls_did_eval'))
 
 # removes bty flower through btymupper
 d <- d %>% select(-(bty_f1lower:bty_m2upper))
@@ -55,29 +54,25 @@ test <- (!train)
 ```
 
 ## Clustering and Modeling
-```{r q3}
-# adding clusters to dataset
-names(d)
-set.seed(281)
-```
 
 ```{r add-cluster}
 add_cluster <- function(col_name, data, cluster_num) {
-
 evals_kmeans <- kmeans(data %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = cluster_num, nstart = 50)
 # cluster assignment
-data <- data %>%
-mutate(col_name = evals_kmeans$cluster)
-
+data['col_name'] <- evals_kmeans$cluster
 }
 
 ```
 
 ```{r manually-adding-clusters}
+# adding clusters to dataset
+# because my function didn't work :(
 
 # adds 2
-evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 2, nstart = 50)
+evals_kmeans <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 2, nstart = 50)
 # cluster assignment
+
+# this was working JUST FINE yesterday now I have no idea what's wrong
 d <- d %>%
 mutate(c2 = evals_kmeans$cluster)
 
@@ -86,7 +81,6 @@ evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','langu
 # cluster assignment
 d <- d %>%
 mutate(c3 = evals_kmeans$cluster)
-
 
 # adds 4
 evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 4, nstart = 50)
@@ -112,13 +106,11 @@ evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','langu
 d <- d %>%
 mutate(c7 = evals_kmeans$cluster)
 
-
 # adds 8
 evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 8, nstart = 50)
 # cluster assignment
 d <- d %>%
 mutate(c8 = evals_kmeans$cluster)
-
 
 # adds 9
 evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 9, nstart = 50)
@@ -133,10 +125,33 @@ d <- d %>%
 mutate(c10 = evals_kmeans$cluster)
 ```
 
-```{r q1}
+```{r cv-q3}
+set.seed(281)
 # code here
+cv_error_10 <- rep(2, 10)
+
+for(i in seq_along(cv_error_10)){
+  evals_kmeans <- kmeans(d %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = i, nstart = 50)
+  
+  
+  cv_error_10[i] <- cv.glm(Auto, glmfit = glm_fit, K = 10)$delta[1]
+}
+cv_error_10
+
+
+library(fpc)
+asw <- numeric(10)
+for (k in 2:10) {
+  asw[[k]] <- pam(d, k) $ silinfo $ avg.width
+  }
+k.best <- which.max(asw)
+cat("silhouette-optimal number of clusters:", k.best, "\n")
+??pam
+
+# so i have to learn how to get a silhouette coefficient? idk what that is... and look for the max there
+# or be able to plot the elbow plot
 ```
-```{r q1}
+```{r out-of-sample-error}
 # code here
 ```
 
