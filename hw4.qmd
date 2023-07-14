@@ -366,7 +366,7 @@ lasso_coef
 The best lambda was .008, and the mse was .219. The important variables were tenure track, ethnicity, gender, language, class level, credit level, picture outfit formality, pic color, number of classes, age, class % eval, students, and beauty average (all except tenured rank and single prof). 
 
 ### Q6
-The approach that did better in terms of test MSE was k-means, which had an MSE of .30 while the lass had an MSE of .219 for the test set.  
+The approach that did better in terms of test MSE was lasso, which had an MSE of .219 while the k-means had an MSE of .30 for the test set.  
 
 A way to combine the two methods could be to use lasso first to limit the 
 variables so that only the most significant ones are included, then use k-means. 
