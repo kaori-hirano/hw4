@@ -19,6 +19,8 @@ suppressPackageStartupMessages(library(openintro))
 suppressPackageStartupMessages(library(boot))
 library(FNN)
 suppressPackageStartupMessages(library(glmnet))
+suppressPackageStartupMessages(library(factoextra))
+suppressPackageStartupMessages(library(cluster))
 ```
 
 # Data
@@ -34,51 +36,58 @@ data('evals')
 ### Q1
 
 ```{r q1}
-# assigns num times a prof teaches a class to total courses a prof teaches into new dataframe
-
-d <- evals %>% group_by(prof_id) %>% mutate(count = n())
-
-d$prof_num_cls <- d$count
-
+# assigns num times a prof teaches a class to total courses taught into new dataframe
+#evals <- evals %>% group_by(prof_id) %>% mutate(prof_num_cls = (count = n()))
+evals <- add_count(evals, prof_id)
+evals$prof_num_cls <- evals$n
+d <- evals
+d <- d %>% select(-n)
 ```
-### Q2
-```{r q2}
-# removes course id, prof id, and cls did eval
-# REMEMBER TO CHANGE THIS BACK TO D WHEN PROF ID IS FIXED
-d <- evals %>% select(-one_of('course_id', 'prof_id', 'cls_did_eval'))
 
+### Q2
+```{r data-editing}
+# removes course id, prof id, and cls did eval
+d <- d %>% select(-one_of('course_id', 'prof_id', 'cls_did_eval')) %>% ungroup()
 # removes bty flower through btymupper
 d <- d %>% select(-(bty_f1lower:bty_m2upper))
-# names(d)
 
 # splits data in training and test set by 70/30
 set.seed(280)
 train <- sample(c(TRUE, FALSE), nrow(d),
      replace = TRUE, prob=c(.7,.3))
 test <- (!train)
+
+# making it into dataframes instead of subsets
+set.seed(280)
+sample1 <- sample(c(TRUE, FALSE), nrow(d), replace=TRUE, prob=c(0.7,0.3))
+cv <- d[sample1, ]
+val <- d[!sample1, ]
 ```
 
 ## Clustering and Modeling
 
-```{r culster-eval}
+```{r culster-eval, eval = FALSE}
+#| warning: false
 cluster_eval <- function(col, data, cluster_num) {
-  evals_kmeans <- kmeans(data %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = cluster_num, nstart = 50)
+  evals_kmeans <- kmeans(data %>% select(-one_of('rank', 'ethnicity', 'gender',
+                'language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 
+                'pic_color')), centers = cluster_num, nstart = 50)
   # cluster assignment
   data <- data %>% mutate(col = evals_kmeans$cluster)
 }
-
-# get the clusters excepting the factor variables
-# assign to a col in the data
 
 ```
 
 ```{r manually-adding-clusters}
 # adding clusters to dataset
 # because my function didn't work :(
-
 # adds 2
 # gets cluster assignments
-evals_kmeans2 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 2, nstart = 50)
+evals_kmeans2 <- kmeans(d[train,]
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language', 
+                                           'cls_level', 'cls_profs', 'cls_credits', 
+                                           'pic_outfit', 'pic_color')),
+                        centers = 2, nstart = 50)
 
 # takes the training cases and assigns them a cluster num in new df to make the next step simpler
 # retrospectively, I didn't need a new data frame and could have assigned it to a col, but with the way I was doing the cv at the time with a function this made more sense
@@ -86,49 +95,81 @@ d2 <- d[train,] %>%
 mutate(c2 = factor(evals_kmeans2$cluster))
 
 # adds 3
-evals_kmeans3 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 3, nstart = 50)
+evals_kmeans3 <- kmeans(d[train,]
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language', 
+                                           'cls_level', 'cls_profs', 'cls_credits', 
+                                           'pic_outfit', 'pic_color')), 
+                        centers = 3, nstart = 50)
 # cluster assignment
 d3 <- d[train,] %>%
 mutate(c3 = factor(evals_kmeans3$cluster))
 
 # adds 4
-evals_kmeans4 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 4, nstart = 50)
+evals_kmeans4 <- kmeans(d[train,]
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language',
+                                           'cls_level', 'cls_profs', 'cls_credits', 
+                                           'pic_outfit', 'pic_color')),
+                        centers = 4, nstart = 50)
 # cluster assignment
 d4 <- d[train,] %>%
 mutate(c4 = factor(evals_kmeans4$cluster))
 
 # adds 5
-evals_kmeans5 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 5, nstart = 50)
+evals_kmeans5 <- kmeans(d[train,] 
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language', 
+                                           'cls_level', 'cls_profs', 'cls_credits',
+                                           'pic_outfit', 'pic_color')),
+                        centers = 5, nstart = 50)
 # cluster assignment
 d5 <- d[train,] %>%
 mutate(c5 = factor(evals_kmeans5$cluster))
 
 # adds 6
-evals_kmeans6 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 6, nstart = 50)
+evals_kmeans6 <- kmeans(d[train,] 
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language',
+                                           'cls_level', 'cls_profs', 'cls_credits', 
+                                           'pic_outfit', 'pic_color')), 
+                        centers = 6, nstart = 50)
 # cluster assignment
 d6 <- d[train,] %>%
 mutate(c6 = factor(evals_kmeans6$cluster))
 
 # adds 7
-evals_kmeans7 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 7, nstart = 50)
+evals_kmeans7 <- kmeans(d[train,] 
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language', 
+                                           'cls_level', 'cls_profs', 'cls_credits', 
+                                           'pic_outfit', 'pic_color')), 
+                        centers = 7, nstart = 50)
 # cluster assignment
 d7 <- d[train,] %>%
 mutate(c7 = factor(evals_kmeans7$cluster))
 
 # adds 8
-evals_kmeans8 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 8, nstart = 50)
+evals_kmeans8 <- kmeans(d[train,]
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language',
+                                           'cls_level', 'cls_profs', 'cls_credits',
+                                           'pic_outfit', 'pic_color')),
+                        centers = 8, nstart = 50)
 # cluster assignment
 d8 <- d[train,] %>%
 mutate(c8 = factor(evals_kmeans8$cluster))
 
 # adds 9
-evals_kmeans9 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 9, nstart = 50)
+evals_kmeans9 <- kmeans(d[train,] 
+                        %>% select(-one_of('rank', 'ethnicity', 'gender','language',
+                                           'cls_level', 'cls_profs', 'cls_credits', 
+                                           'pic_outfit', 'pic_color')), 
+                        centers = 9, nstart = 50)
 # cluster assignment
 d9 <- d[train,] %>%
 mutate(c9 = factor(evals_kmeans9$cluster))
 
 # adds 10
-evals_kmeans10 <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 10, nstart = 50)
+evals_kmeans10 <- kmeans(d[train,]
+                         %>% select(-one_of('rank', 'ethnicity', 'gender','language',
+                                            'cls_level', 'cls_profs', 'cls_credits',
+                                            'pic_outfit', 'pic_color')), 
+                         centers = 10, nstart = 50)
 # cluster assignment
 d10 <- d[train,] %>%
 mutate(c10 = factor(evals_kmeans10$cluster))
@@ -137,7 +178,8 @@ mutate(c10 = factor(evals_kmeans10$cluster))
 ```{r cv-q3}
 # cv for 2
 # basic model is all categorical and cluster
-glm2 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c2, data = d2) 
+glm2 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs
+            + cls_credits + pic_outfit + pic_color + c2, data = d2) 
 # cross validation
 set.seed(281)
 cv_err2 <- cv.glm(data = d2, glmfit = glm2, K = 10)
@@ -146,7 +188,8 @@ cv_err2$delta
 
 # cv for 3
 # basic model is all categorical and cluster
-glm3 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c3, data = d3) 
+glm3 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs
+            + cls_credits + pic_outfit + pic_color + c3, data = d3) 
 # cross validation
 set.seed(281)
 cv_err3 <- cv.glm(data = d3, glmfit = glm3, K = 10)
@@ -155,7 +198,8 @@ cv_err3$delta
 
 # cv for 4
 # basic model is all categorical and cluster
-glm4 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c4, data = d4) 
+glm4 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs 
+            + cls_credits + pic_outfit + pic_color + c4, data = d4) 
 # cross validation
 set.seed(281)
 cv_err4 <- cv.glm(data = d4, glmfit = glm4, K = 10)
@@ -164,7 +208,8 @@ cv_err4$delta
 
 # cv for 5
 # basic model is all categorical and cluster
-glm5 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c5, data = d5) 
+glm5 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs
+            + cls_credits + pic_outfit + pic_color + c5, data = d5) 
 # cross validation
 set.seed(281)
 cv_err5 <- cv.glm(data = d5, glmfit = glm5, K = 10)
@@ -173,7 +218,8 @@ cv_err5$delta
 
 # cv for 6
 # basic model is all categorical and cluster
-glm6 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c6, data = d6) 
+glm6 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs 
+            + cls_credits + pic_outfit + pic_color + c6, data = d6) 
 # cross validation
 set.seed(281)
 cv_err6 <- cv.glm(data = d6, glmfit = glm6, K = 10)
@@ -182,7 +228,8 @@ cv_err6$delta
 
 # cv for 7
 # basic model is all categorical and cluster
-glm7 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c7, data = d7) 
+glm7 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs
+            + cls_credits + pic_outfit + pic_color + c7, data = d7) 
 # cross validation
 set.seed(281)
 cv_err7 <- cv.glm(data = d7, glmfit = glm7, K = 10)
@@ -191,7 +238,8 @@ cv_err7$delta
 
 # cv for 8
 # basic model is all categorical and cluster
-glm8 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c8, data = d8) 
+glm8 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs
+            + cls_credits + pic_outfit + pic_color + c8, data = d8) 
 # cross validation
 set.seed(281)
 cv_err8 <- cv.glm(data = d8, glmfit = glm8, K = 10)
@@ -200,7 +248,8 @@ cv_err8$delta
 
 # cv for 9
 # basic model is all categorical and cluster
-glm9 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c9, data = d9) 
+glm9 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs 
+            + cls_credits + pic_outfit + pic_color + c9, data = d9) 
 # cross validation
 set.seed(281)
 cv_err9 <- cv.glm(data = d9, glmfit = glm9, K = 10)
@@ -209,7 +258,8 @@ cv_err9$delta
 
 # cv for 10
 # basic model is all categorical and cluster
-glm10 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + c10, data = d10) 
+glm10 <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs
+             + cls_credits + pic_outfit + pic_color + c10, data = d10) 
 # cross validation
 set.seed(281)
 cv_err10 <- cv.glm(data = d10, glmfit = glm10, K = 10)
@@ -218,56 +268,81 @@ cv_err10$delta
 ```
 4 clusters has the lowest MSE (.2714, .2705), so it is the optimal number of clusters for this model. 
 
-```{r out-of-sample-error}
-# HOW DO YOU USE THE TEST SET TO ESTIMATE BASED ON THE REFITTED MODEL ON THE WHOLE TRAINING DATA? 
+
+```{r mse}
+# gets numeric only for k means output/predictions
+numeric_cv <- cv %>% select(age, cls_perc_eval, cls_students, bty_avg, prof_num_cls)
 
 #set seed
 set.seed(282)
-# train is already established 
-# fits k means on training
-kmeans_out <- kmeans(d[train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color')), centers = 4, nstart = 50)
-# getting predictions on kmeans numerical only
 
-pred_clust  <- get.knnx(kmeans_out$center, d[-train,] %>% select(-one_of('rank', 'ethnicity', 'gender','language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 'pic_color'), -1)$nn.index[,1]
-# create a data frame of cluster assignments for the train
+# do k means clustering on train again
+kmeans_out <- kmeans(cv %>% 
+                       select(-one_of('rank', 'ethnicity', 'gender','language', 
+                                      'cls_level', 'cls_profs', 'cls_credits', 
+                                      'pic_outfit', 'pic_color')), 
+                     centers = 4, nstart = 50)
 
-clust_train <- data.frame(canton = names(kmeans_out$cluster),
-cluster = kmeans_out$cluster,
-set = "train")
-# create a data frame of cluster assignments for the test data predictions
+# creates dataset with the clusters stored for train
+cdata <- cbind(d[train,], cluster = kmeans_out$cluster)
 
-clust_test <- data.frame(canton = row.names(d[-train,]),
-cluster = pred_clust,
-set = "test")
+# build model on train again
+glmfinal <- glm(score ~ rank + ethnicity + gender + language + cls_level + 
+                cls_profs + cls_credits + pic_outfit + pic_color + cluster,
+                data = cdata) 
 
-# show assignment to clusters for both sets
-bind_rows(clust_train, clust_test) |>
-count(cluster, set)
+# getting predictions on kmeans numerical only, test data
+pred_clust  <- get.knnx(kmeans_out$center, val %>% 
+                          select(-one_of('rank', 'ethnicity', 'gender','language',
+                                         'cls_level', 'cls_profs', 'cls_credits', 
+                                         'pic_outfit', 'pic_color')),
+                        1)$nn.index[,1]
+names(val)
+# assigning cluster data to test set
+tdata <- cbind(d[test, ], cluster = pred_clust)
 
-# refitting model
-# refits model to best cluster num
-glmbest <- glm(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color + cls, data = d)
+# build model on test again
+glmfinal <- glm(score ~ rank + ethnicity + gender + language + cls_level +
+                  cls_profs + cls_credits + pic_outfit + pic_color + cluster,
+                data = tdata) 
 
-# gets the out-of-sample-error 
-# out of sample error hasn't been defined in class or in the textbook
-# so I am using MSE and assuming that is the same
-# because there also wasn't a clear definition online
+# cross validation to get the MSE
+set.seed(281)
+cv_err10 <- cv.glm(data = tdata, glmfit = glmfinal, K = 10)
+# gives MSE
+cv_err10$delta
+```
+From this, the MSE for the test data with the optimal number of clusters is .30. 
+
+
+### Q4
+```{r visualization}
+# plots by first two principal components
+fviz_cluster(kmeans_out, numeric_cv)
+kmeans_out
 ```
 
+Based on this plot, which plots the two principal components, we can see that there is a lot of overlap for clusters 1 and 4, with less overlap in 1 and 2, with no overlap with the smallest cluster 3. By looking at the output itself, we can see that ratings are highest in cluster 3, which is the smallest, by .7 points, higher class sizes by 200, but also significantly higher beauty averages (2 points higher) on average. Clusters 1 and 4 are also similar in score, beauty average, and num classes, and differ most notably by the class percent eval and class size. Clusters 1, 2, and 4 have similar beauty avg scores. Clusters 2 and 4 are similar in age, while 1 is slightly younger. Overall, these data show us that there are many similarities between clusters 1, 2, and 4, while cluster 3 is more different/shares less similarities than the other three, most notably in score, beauty average, class size, and class size. 
+
+
 ## Lasso
-```{r cv-lasso}
+```{r cv-lasso-with-everything}
 # set up lasso
 # sets up matrix
-x <- model.matrix(score ~ rank + ethnicity + gender + language + cls_level + cls_profs + cls_credits + pic_outfit + pic_color, 
-                  d)[, -1]
+set.seed(283)
+x <- model.matrix(score ~ rank + ethnicity + gender + language + cls_level + 
+                    cls_profs + cls_credits + pic_outfit + pic_color + prof_num_cls
+                  + age + cls_perc_eval + cls_students + bty_avg, 
+                  d)[, -1] 
 y <- d$score
 y_val <- y[test] #gets y of test set
 
 grid <- 10^seq(10, -2, length = 100) # sets lam
 
 set.seed(283)
-lasso_mod <- glmnet(x[train, ], y[train], alpha = 1,
+lasso_mod <- glmnet(x[train,], y[train], alpha = 1,
     lambda = grid)
+
 
 # get l
 set.seed(283)
@@ -284,13 +359,23 @@ mean((lasso_pred - y_val)^2)
 out <- glmnet(x, y, alpha = 1, lambda = grid)
 lasso_coef <- predict(out, type = 'coefficient', s = bestlaml)
 lasso_coef
+
 ```
 
-The ideal lambda is 0.026 The MSE for the test set is .259. The variables selected by lasso are tenured, ethnicity (not minority), gender (male), language (non english), class credit (one credit), outfit (not formal) and pic color (color). 
-
+The best lambda was .008, and the mse was .219. The important variables were tenure track, ethnicity, gender, language, class level, credit level, picture outfit formality, pic color, number of classes, age, class % eval, students, and beauty average (all except tenured rank and single prof). 
 
 ### Q6
-The approach that did better in terms of test MSE was METHOD. 
+The approach that did better in terms of test MSE was k-means, which had an MSE of .30 while the lass had an MSE of .219 for the test set.  
 
-A way to combine the two methods could be to use lasso first to limit the variables that are important, then use k-means. This could help get more accurate clusters because the variables being used will be more significant. 
-Lasso is able to tell us which predictors are more important than other ones when predicting data, while k-means is able to tell us about how the data are related to each other. K-means is more focused on those relationships and similarities between clusters while lasso is very good at showing the overall what is important in the model in terms of predictors. The advantages and disadvantages will be dependent on if you are looking more for a model that is going to tell you what is important in prediction or how the data are grouped together/classification. 
+A way to combine the two methods could be to use lasso first to limit the 
+variables so that only the most significant ones are included, then use k-means. 
+This could help get more accurate clusters because the variables being used will
+be more significant. 
+
+Lasso is able to tell us which predictors are more important than other ones when 
+predicting data, while k-means is able to tell us about how the data are related 
+to each other. K-means is more focused on those relationships and similarities
+between clusters/data while lasso is very good at showing the overall what is important 
+in the model in terms of predictors. The advantages and disadvantages will be 
+dependent on if you are looking more for a model that is going to tell you what 
+is important in prediction or how the data are grouped together/classification. 
