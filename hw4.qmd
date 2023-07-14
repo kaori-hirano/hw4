@@ -67,7 +67,6 @@ val <- d[!sample1, ]
 ## Clustering and Modeling
 
 ```{r culster-eval, eval = FALSE}
-#| warning: false
 cluster_eval <- function(col, data, cluster_num) {
   evals_kmeans <- kmeans(data %>% select(-one_of('rank', 'ethnicity', 'gender',
                 'language', 'cls_level', 'cls_profs', 'cls_credits', 'pic_outfit', 
@@ -90,7 +89,9 @@ evals_kmeans2 <- kmeans(d[train,]
                         centers = 2, nstart = 50)
 
 # takes the training cases and assigns them a cluster num in new df to make the next step simpler
-# retrospectively, I didn't need a new data frame and could have assigned it to a col, but with the way I was doing the cv at the time with a function this made more sense
+# retrospectively, I didn't need a new data frame and could have assigned
+# it to a col, but with the way I was doing the cv at the time with a 
+# function this made more sense
 d2 <- d[train,] %>%
 mutate(c2 = factor(evals_kmeans2$cluster))
 
@@ -297,7 +298,7 @@ pred_clust  <- get.knnx(kmeans_out$center, val %>%
                                          'cls_level', 'cls_profs', 'cls_credits', 
                                          'pic_outfit', 'pic_color')),
                         1)$nn.index[,1]
-names(val)
+
 # assigning cluster data to test set
 tdata <- cbind(d[test, ], cluster = pred_clust)
 
@@ -312,17 +313,17 @@ cv_err10 <- cv.glm(data = tdata, glmfit = glmfinal, K = 10)
 # gives MSE
 cv_err10$delta
 ```
-From this, the MSE for the test data with the optimal number of clusters is .30. 
+The MSE for the test data with the optimal number of clusters is .30 (.3078, .3040).  
 
 
 ### Q4
 ```{r visualization}
 # plots by first two principal components
 fviz_cluster(kmeans_out, numeric_cv)
-kmeans_out
+kmeans_out$centers
 ```
 
-Based on this plot, which plots the two principal components, we can see that there is a lot of overlap for clusters 1 and 4, with less overlap in 1 and 2, with no overlap with the smallest cluster 3. By looking at the output itself, we can see that ratings are highest in cluster 3, which is the smallest, by .7 points, higher class sizes by 200, but also significantly higher beauty averages (2 points higher) on average. Clusters 1 and 4 are also similar in score, beauty average, and num classes, and differ most notably by the class percent eval and class size. Clusters 1, 2, and 4 have similar beauty avg scores. Clusters 2 and 4 are similar in age, while 1 is slightly younger. Overall, these data show us that there are many similarities between clusters 1, 2, and 4, while cluster 3 is more different/shares less similarities than the other three, most notably in score, beauty average, class size, and class size. 
+Based on this plot, which plots the two principal components, we can see that there is a lot of overlap for clusters 1 and 4, with less overlap in 1 and 2, with no overlap with the smallest cluster 3. By looking at the output itself, we can see that ratings are highest in cluster 3, which is the smallest, by .7 points, higher class sizes by 200, but also notably higher beauty averages (2 points higher) on average. Clusters 1 and 4 are also similar in score, beauty average, and num classes, and differ most notably by the class percent eval and class size. Clusters 1, 2, and 4 have similar beauty avg scores. Clusters 2 and 4 are similar in age, while 1 is slightly younger. Overall, these data show us that there are many similarities between clusters 1, 2, and 4, while cluster 3 is more different/shares less similarities than the other three, most notably in score, beauty average, class size, and class size. 
 
 
 ## Lasso
@@ -378,4 +379,4 @@ to each other. K-means is more focused on those relationships and similarities
 between clusters/data while lasso is very good at showing the overall what is important 
 in the model in terms of predictors. The advantages and disadvantages will be 
 dependent on if you are looking more for a model that is going to tell you what 
-is important in prediction or how the data are grouped together/classification. 
+is important in prediction or how the data are grouped together or classified.  
